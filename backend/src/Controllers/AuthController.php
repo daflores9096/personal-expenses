@@ -32,7 +32,7 @@ class AuthController
         }
 
         $stmt = $this->db->prepare(
-            'SELECT id, username, password_hash, rol FROM usuarios WHERE username = ?'
+            'SELECT id, username, password_hash, nombre_completo, rol FROM usuarios WHERE username = ?'
         );
         $stmt->execute([$username]);
         $usuario = $stmt->fetch();
@@ -46,9 +46,10 @@ class AuthController
         Response::json([
             'token' => $token,
             'usuario' => [
-                'id'       => (int)$usuario['id'],
-                'username' => $usuario['username'],
-                'rol'      => $usuario['rol'],
+                'id'              => (int)$usuario['id'],
+                'username'        => $usuario['username'],
+                'nombre_completo' => $usuario['nombre_completo'],
+                'rol'             => $usuario['rol'],
             ],
         ]);
     }
@@ -59,10 +60,21 @@ class AuthController
     public function me(): void
     {
         $payload = Auth::requireAuth();
+        $stmt = $this->db->prepare(
+            'SELECT id, username, nombre_completo, rol FROM usuarios WHERE id = ?'
+        );
+        $stmt->execute([(int)$payload['sub']]);
+        $usuario = $stmt->fetch();
+
+        if (!$usuario) {
+            Response::error('Usuario no encontrado', 404);
+        }
+
         Response::json([
-            'id'       => (int)$payload['sub'],
-            'username' => $payload['username'],
-            'rol'      => $payload['rol'],
+            'id'              => (int)$usuario['id'],
+            'username'        => $usuario['username'],
+            'nombre_completo' => $usuario['nombre_completo'],
+            'rol'             => $usuario['rol'],
         ]);
     }
 }

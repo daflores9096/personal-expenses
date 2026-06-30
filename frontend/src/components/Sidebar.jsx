@@ -22,10 +22,9 @@ export default function Sidebar({ activo, onSelect, abierto, onCerrar }) {
       <aside className={abierto ? 'sidebar open' : 'sidebar'}>
         <div className="sidebar-user-top">
           <span className="sidebar-user-label">Conectado como</span>
-          <div className="sidebar-user-row">
-            <span className="sidebar-user-name">{usuario?.username}</span>
-            <span className={`badge rol ${usuario?.rol}`}>{usuario?.rol}</span>
-          </div>
+          <span className="sidebar-user-name">
+            {usuario?.nombre_completo?.trim() || usuario?.username}
+          </span>
         </div>
 
         <div className="sidebar-seccion-label">Menú</div>
