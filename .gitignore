@@ -1,0 +1,30 @@
+# Dependencias
+node_modules/
+vendor/
+
+# Builds
+frontend/dist/
+dist/
+build/
+
+# Entornos
+.env
+.env.local
+*.local
+
+# Datos persistentes de Docker
+db_data/
+mysql_data/
+
+# Logs
+*.log
+logs/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
