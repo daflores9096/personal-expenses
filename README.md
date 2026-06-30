@@ -78,7 +78,7 @@ Requisitos: Docker y Docker Compose.
    docker compose up -d --build
    ```
 
-4. Abre la app en: **http://localhost:8080**
+4. Abre la app en: **http://localhost:28080**
 
 La primera vez, MySQL ejecuta `db/init/01-schema.sql` y crea las tablas y categorías por defecto.
 
@@ -104,7 +104,7 @@ npm install
 npm run dev
 ```
 
-Vite levanta en `http://localhost:5173` y redirige `/api` al backend en `http://localhost:8080` (configurable con `VITE_API_PROXY`).
+Vite levanta en `http://localhost:5173` y redirige `/api` al backend en `http://localhost:28080` (configurable con `VITE_API_PROXY`).
 
 ## Despliegue en Synology NAS
 
@@ -112,12 +112,12 @@ El NAS Synology con **Container Manager** (o el antiguo Docker) soporta proyecto
 
 1. Copia toda la carpeta del proyecto al NAS (por ejemplo a `/volume1/docker/personal-expenses`) vía File Station o SSH.
 2. Crea el archivo `.env` a partir de `.env.example` y ajusta las contraseñas.
-   - Si el puerto `8080` o `3307` ya están en uso en el NAS, cámbialos con `APP_PORT` y `DB_EXTERNAL_PORT`.
+   - Si el puerto `28080` o `3307` ya están en uso en el NAS, cámbialos con `APP_PORT` y `DB_EXTERNAL_PORT`.
 3. En **Container Manager → Proyecto → Crear**:
    - Ruta: la carpeta donde copiaste el proyecto.
    - Fuente: `docker-compose.yml` existente.
    - Construye y arranca.
-4. Accede desde `http://<IP-del-NAS>:8080`.
+4. Accede desde `http://<IP-del-NAS>:28080`.
 
 > Alternativamente por SSH: `cd /volume1/docker/personal-expenses && docker compose up -d --build`
 

@@ -5,7 +5,7 @@
 #   Local:     docker compose up -d --build
 #   Synology:  igual, o desde Container Manager (Proyecto)
 #
-# Accede a la app en:  http://<host>:${APP_PORT}  (por defecto 8080)
+# Accede a la app en:  http://<host>:${APP_PORT}  (por defecto 28080)
 # ==========================================================
 
 services:
@@ -55,7 +55,7 @@ services:
     container_name: gastos_frontend
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8080}:80"
+      - "${APP_PORT:-28080}:80"
     depends_on:
       - backend
 
