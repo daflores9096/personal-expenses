@@ -123,6 +123,29 @@ El NAS Synology con **Container Manager** (o el antiguo Docker) soporta proyecto
 
 Los datos de MySQL persisten en el volumen `db_data` aunque reinicies los contenedores.
 
+### Problemas frecuentes en Synology
+
+**`container gastos_db is unhealthy`**
+
+1. Revisa los logs de MySQL:
+   ```bash
+   sudo docker logs gastos_db --tail 50
+   ```
+2. Causas habituales:
+   - **Primera inicialización lenta**: espera 1–2 minutos y vuelve a intentar `docker compose up -d`.
+   - **Puerto ocupado** (`DB_EXTERNAL_PORT`, p. ej. 3308): cámbialo en `.env` o quita el bloque `ports` del servicio `db` si no necesitas acceder a MySQL desde fuera.
+   - **Volumen corrupto** (arranque interrumpido): solo si no tienes datos importantes:
+     ```bash
+     sudo docker compose down -v
+     sudo docker compose up -d --build
+     ```
+3. Asegúrate de que `MYSQL_PASSWORD` y `DB_PASS` en `.env` tengan **el mismo valor** (aunque Compose usa `MYSQL_PASSWORD` para el backend).
+
+**`No se pudo conectar a la base de datos` al iniciar sesión**
+
+- Unifica contraseñas: `MYSQL_PASSWORD` = `DB_PASS`.
+- Si el volumen se creó con otra contraseña, usa `ALTER USER` en MySQL o recrea el volumen con `docker compose down -v`.
+
 ## API REST
 
 Base: `/api`. Salvo `POST /api/auth/login`, todas las rutas requieren el header
