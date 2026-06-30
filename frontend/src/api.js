@@ -97,4 +97,76 @@ export const api = {
   actualizarIngreso: (id, ingreso) =>
     request(`/ingresos/${id}`, { method: 'PUT', body: JSON.stringify(ingreso) }),
   eliminarIngreso: (id) => request(`/ingresos/${id}`, { method: 'DELETE' }),
+
+  // Respaldos (solo admin)
+  descargarRespaldo: async () => {
+    const token = tokenStore.get();
+    const res = await fetch(`${BASE}/respaldos/descargar`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (res.status === 401 && onUnauthorized) {
+      onUnauthorized();
+    }
+
+    if (!res.ok) {
+      let mensaje = `Error ${res.status}`;
+      try {
+        const data = await res.json();
+        mensaje = data?.error || mensaje;
+      } catch {
+        // respuesta no JSON
+      }
+      throw new Error(mensaje);
+    }
+
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const nombre = match?.[1] || `respaldo-gastos-${new Date().toISOString().slice(0, 10)}.sql`;
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nombre;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  },
+
+  restaurarRespaldo: async (archivo, confirmacion) => {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    formData.append('confirmacion', confirmacion);
+
+    const token = tokenStore.get();
+    const res = await fetch(`${BASE}/respaldos/restaurar`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (res.status === 401 && onUnauthorized) {
+      onUnauthorized();
+    }
+
+    const text = await res.text();
+    let data = null;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: text };
+      }
+    }
+
+    if (!res.ok) {
+      const error = new Error(data?.error || `Error ${res.status}`);
+      error.detalle = data?.detalle;
+      throw error;
+    }
+
+    return data;
+  },
 };

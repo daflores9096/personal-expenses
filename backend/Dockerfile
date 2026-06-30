@@ -6,6 +6,7 @@ RUN docker-php-ext-install pdo pdo_mysql \
 
 # Configuración de Apache (DocumentRoot -> public + reescritura a index.php)
 COPY apache/000-default.conf /etc/apache2/sites-available/000-default.conf
+COPY php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
 # Código de la aplicación
 COPY . /var/www/html/

@@ -8,6 +8,7 @@ const MENU = [
   { id: 'gastos-fijos', label: 'Gastos Fijos', icon: '📌', adminOnly: true },
   { id: 'categorias', label: 'Categorías', icon: '🏷️', adminOnly: true },
   { id: 'usuarios', label: 'Usuarios', icon: '👥', adminOnly: true },
+  { id: 'respaldos', label: 'Respaldos', icon: '💾', adminOnly: true },
 ];
 
 export default function Sidebar({ activo, onSelect, abierto, onCerrar }) {

@@ -10,6 +10,7 @@ import IngresosView from './components/IngresosView.jsx';
 import GastosFijosView from './components/GastosFijosView.jsx';
 import CategoriasView from './components/CategoriasView.jsx';
 import UsuariosView from './components/UsuariosView.jsx';
+import RespaldosView from './components/RespaldosView.jsx';
 
 const TITULOS = {
   inicio: 'Inicio',
@@ -18,6 +19,7 @@ const TITULOS = {
   'gastos-fijos': 'Gastos Fijos',
   categorias: 'Categorías',
   usuarios: 'Usuarios',
+  respaldos: 'Respaldos',
 };
 
 export default function App() {
@@ -66,7 +68,7 @@ export default function App() {
   }
 
   // Evita que un appuser vea secciones de admin (defensa adicional al menú).
-  const SECCIONES_ADMIN = ['gastos-fijos', 'categorias', 'usuarios'];
+  const SECCIONES_ADMIN = ['gastos-fijos', 'categorias', 'usuarios', 'respaldos'];
   const seccionEfectiva =
     !esAdmin && SECCIONES_ADMIN.includes(seccion) ? 'inicio' : seccion;
 
@@ -91,6 +93,8 @@ export default function App() {
         return <GastosFijosView categorias={categorias} />;
       case 'usuarios':
         return <UsuariosView />;
+      case 'respaldos':
+        return <RespaldosView />;
       case 'gastos':
       default:
         return (

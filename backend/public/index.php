@@ -9,6 +9,7 @@ use App\Controllers\CategoriaController;
 use App\Controllers\GastoController;
 use App\Controllers\GastoFijoController;
 use App\Controllers\IngresoController;
+use App\Controllers\RespaldoController;
 use App\Controllers\UsuarioController;
 
 /**
@@ -32,7 +33,7 @@ spl_autoload_register(static function (string $class): void {
 // CORS (útil cuando el frontend corre en otro origen durante el desarrollo).
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
@@ -169,6 +170,18 @@ switch ($recurso) {
                 'DELETE' => $controller->destroy($id),
                 default  => Response::error('Método no permitido', 405),
             };
+        }
+        break;
+
+    case 'respaldos':
+        $controller = new RespaldoController();
+        $accion = $segments[1] ?? null;
+        if ($accion === 'descargar' && $method === 'GET') {
+            $controller->descargar();
+        } elseif ($accion === 'restaurar' && $method === 'POST') {
+            $controller->restaurar();
+        } else {
+            Response::error('Ruta no encontrada', 404);
         }
         break;
 
