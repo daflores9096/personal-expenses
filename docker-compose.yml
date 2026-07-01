@@ -49,6 +49,12 @@ services:
     depends_on:
       db:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "php -r \"exit(@file_get_contents('http://127.0.0.1/health') ? 0 : 1);\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
 
   frontend:
     build:
@@ -58,7 +64,8 @@ services:
     ports:
       - "${APP_PORT:-28080}:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   db_data:

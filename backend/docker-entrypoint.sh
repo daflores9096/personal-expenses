@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-# Ejecuta la migración/seed (crea tabla usuarios y admin inicial) y luego
-# arranca Apache en primer plano.
+# Espera a MySQL, ejecuta migración/seed y luego arranca Apache.
+php /var/www/html/wait-for-db.php
 php /var/www/html/migrate.php || true
 
 exec apache2-foreground
