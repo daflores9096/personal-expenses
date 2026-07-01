@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
-import { formatFecha, formatMoney } from '../utils.js';
+import { usePeriodo } from '../periodo.jsx';
+import { enRango, formatFecha, formatMoney } from '../utils.js';
 import GastoForm from './GastoForm.jsx';
 import Modal from './Modal.jsx';
 import PagoGastoFijoModal from './PagoGastoFijoModal.jsx';
 import Acciones from './Acciones.jsx';
 import DetalleModal from './DetalleModal.jsx';
+import PeriodoIndicador from './PeriodoIndicador.jsx';
 
 export default function GastosView({ gastos, categorias, recargar }) {
+  const { desde, hasta } = usePeriodo();
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [guardando, setGuardando] = useState(false);
@@ -20,12 +23,12 @@ export default function GastosView({ gastos, categorias, recargar }) {
 
   const cargarGastosFijos = useCallback(async () => {
     try {
-      setGastosFijos(await api.listarGastosFijos());
+      setGastosFijos(await api.listarGastosFijos(desde, hasta));
     } catch {
       // Si falla (p. ej. sin permisos), simplemente no se muestran pendientes.
       setGastosFijos([]);
     }
-  }, []);
+  }, [desde, hasta]);
 
   useEffect(() => {
     cargarGastosFijos();
@@ -40,10 +43,15 @@ export default function GastosView({ gastos, categorias, recargar }) {
     await Promise.all([recargar(), cargarGastosFijos()]);
   }, [recargar, cargarGastosFijos]);
 
+  const gastosPeriodo = useMemo(
+    () => gastos.filter((g) => enRango(g.fecha, desde, hasta)),
+    [gastos, desde, hasta]
+  );
+
   const gastosFiltrados = useMemo(() => {
-    if (!filtroCategoria) return gastos;
-    return gastos.filter((g) => String(g.categoria_id) === filtroCategoria);
-  }, [gastos, filtroCategoria]);
+    if (!filtroCategoria) return gastosPeriodo;
+    return gastosPeriodo.filter((g) => String(g.categoria_id) === filtroCategoria);
+  }, [gastosPeriodo, filtroCategoria]);
 
   const total = useMemo(
     () => gastosFiltrados.reduce((acc, g) => acc + Number(g.monto), 0),
@@ -118,6 +126,8 @@ export default function GastosView({ gastos, categorias, recargar }) {
         </div>
       </div>
 
+      <PeriodoIndicador />
+
       {error && <div className="alert error">{error}</div>}
 
       {pendientes.length > 0 && (
@@ -183,7 +193,11 @@ export default function GastosView({ gastos, categorias, recargar }) {
       />
 
       {gastosFiltrados.length === 0 ? (
-        <p className="muted">No hay gastos registrados todavía.</p>
+        <p className="muted">
+          {gastos.length === 0
+            ? 'No hay gastos registrados todavía.'
+            : 'No hay gastos en el período seleccionado.'}
+        </p>
       ) : (
         <div className="tabla-wrap">
           <table className="tabla">

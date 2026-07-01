@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
-import { formatFecha, formatMoney, hoyISO } from '../utils.js';
+import { usePeriodo } from '../periodo.jsx';
+import { enRango, formatFecha, formatMoney, hoyISO } from '../utils.js';
 import Modal from './Modal.jsx';
 import Acciones from './Acciones.jsx';
 import DetalleModal from './DetalleModal.jsx';
+import PeriodoIndicador from './PeriodoIndicador.jsx';
 
 const VACIO = { fecha: hoyISO(), titulo: '', detalle: '', monto: '' };
 
 export default function IngresosView() {
+  const { desde, hasta } = usePeriodo();
   const [ingresos, setIngresos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
@@ -36,9 +39,14 @@ export default function IngresosView() {
     cargar();
   }, []);
 
+  const ingresosPeriodo = useMemo(
+    () => ingresos.filter((i) => enRango(i.fecha, desde, hasta)),
+    [ingresos, desde, hasta]
+  );
+
   const total = useMemo(
-    () => ingresos.reduce((acc, i) => acc + Number(i.monto), 0),
-    [ingresos]
+    () => ingresosPeriodo.reduce((acc, i) => acc + Number(i.monto), 0),
+    [ingresosPeriodo]
   );
 
   const abrirNuevo = () => {
@@ -122,6 +130,8 @@ export default function IngresosView() {
         </div>
       </div>
 
+      <PeriodoIndicador />
+
       {error && <div className="alert error">{error}</div>}
 
       <Modal
@@ -201,8 +211,12 @@ export default function IngresosView() {
 
       {cargando ? (
         <p className="muted">Cargando…</p>
-      ) : ingresos.length === 0 ? (
-        <p className="muted">No hay ingresos registrados todavía.</p>
+      ) : ingresosPeriodo.length === 0 ? (
+        <p className="muted">
+          {ingresos.length === 0
+            ? 'No hay ingresos registrados todavía.'
+            : 'No hay ingresos en el período seleccionado.'}
+        </p>
       ) : (
         <div className="tabla-wrap">
           <table className="tabla">
@@ -217,7 +231,7 @@ export default function IngresosView() {
               </tr>
             </thead>
             <tbody>
-              {ingresos.map((i) => (
+              {ingresosPeriodo.map((i) => (
                 <tr key={i.id}>
                   <td>{formatFecha(i.fecha)}</td>
                   <td>{i.titulo}</td>

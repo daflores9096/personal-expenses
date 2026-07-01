@@ -41,3 +41,27 @@ export function parseISO(iso) {
 export function enRango(fecha, desde, hasta) {
   return (!desde || fecha >= desde) && (!hasta || fecha <= hasta);
 }
+
+export const ETIQUETAS_PERIODO = {
+  'mes-actual': 'Mes actual',
+  'mes-anterior': 'Mes anterior',
+  'ultimos-3-meses': 'Últimos 3 meses',
+  rango: 'Rango de fechas',
+};
+
+/** Calcula desde/hasta según el tipo de período (excepto 'rango'). */
+export function calcularFechasPeriodo(tipo) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  if (tipo === 'mes-actual') {
+    return { desde: toISO(new Date(y, m, 1)), hasta: hoyISO() };
+  }
+  if (tipo === 'mes-anterior') {
+    return { desde: toISO(new Date(y, m - 1, 1)), hasta: toISO(new Date(y, m, 0)) };
+  }
+  if (tipo === 'ultimos-3-meses') {
+    return { desde: toISO(new Date(y, m - 2, 1)), hasta: hoyISO() };
+  }
+  return { desde: inicioMesISO(), hasta: hoyISO() };
+}

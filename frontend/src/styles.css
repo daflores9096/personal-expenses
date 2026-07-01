@@ -303,7 +303,12 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.periodo-indicador {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
 }
 
 .toolbar-left {

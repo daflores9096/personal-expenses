@@ -81,7 +81,13 @@ export const api = {
   eliminarGasto: (id) => request(`/gastos/${id}`, { method: 'DELETE' }),
 
   // Gastos fijos
-  listarGastosFijos: () => request('/gastos-fijos'),
+  listarGastosFijos: (desde, hasta) => {
+    const params = new URLSearchParams();
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
+    const qs = params.toString();
+    return request(`/gastos-fijos${qs ? `?${qs}` : ''}`);
+  },
   crearGastoFijo: (gastoFijo) =>
     request('/gastos-fijos', { method: 'POST', body: JSON.stringify(gastoFijo) }),
   actualizarGastoFijo: (id, gastoFijo) =>

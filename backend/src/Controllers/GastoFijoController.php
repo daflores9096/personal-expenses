@@ -19,17 +19,22 @@ class GastoFijoController
 
     public function index(): void
     {
+        [$desde, $hasta] = $this->rangoFechas();
+
         $sql = "SELECT gf.id, gf.titulo, gf.categoria_id, c.nombre AS categoria_nombre,
                        gf.monto_esperado, gf.activo, gf.created_at,
                        (SELECT g.id FROM gastos g
                           WHERE g.gasto_fijo_id = gf.id
-                            AND DATE_FORMAT(g.fecha, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+                            AND g.fecha >= :desde
+                            AND g.fecha <= :hasta
                           ORDER BY g.id DESC LIMIT 1) AS gasto_actual_id
                 FROM gastos_fijos gf
                 INNER JOIN categorias c ON c.id = gf.categoria_id
                 WHERE gf.activo = 1
                 ORDER BY gf.titulo ASC";
-        $rows = $this->db->query($sql)->fetchAll();
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['desde' => $desde, 'hasta' => $hasta]);
+        $rows = $stmt->fetchAll();
 
         foreach ($rows as &$row) {
             $row['pagado_actual'] = $row['gasto_actual_id'] !== null;
@@ -37,6 +42,32 @@ class GastoFijoController
         unset($row);
 
         Response::json($rows);
+    }
+
+    /** Rango de fechas para pendientes: query params o mes actual por defecto. */
+    private function rangoFechas(): array
+    {
+        $desde = trim((string)($_GET['desde'] ?? ''));
+        $hasta = trim((string)($_GET['hasta'] ?? ''));
+
+        if ($desde === '' || $hasta === '') {
+            return [date('Y-m-01'), date('Y-m-d')];
+        }
+
+        if (!$this->fechaValida($desde) || !$this->fechaValida($hasta)) {
+            Response::error('Fechas inválidas (use YYYY-MM-DD)', 422);
+        }
+
+        if ($desde > $hasta) {
+            Response::error('La fecha "desde" no puede ser posterior a "hasta"', 422);
+        }
+
+        return [$desde, $hasta];
+    }
+
+    private function fechaValida(string $fecha): bool
+    {
+        return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha);
     }
 
     public function show(int $id): void

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
+import { usePeriodo } from '../periodo.jsx';
 import {
   enRango,
   formatFecha,
   formatMoney,
   hoyISO,
-  inicioMesISO,
   parseISO,
   toISO,
 } from '../utils.js';
@@ -17,27 +17,7 @@ export default function InicioView() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
-  const [periodo, setPeriodo] = useState('mes-actual');
-  const [desde, setDesde] = useState(inicioMesISO());
-  const [hasta, setHasta] = useState(hoyISO());
-
-  const aplicarPeriodo = (value) => {
-    setPeriodo(value);
-    if (value === 'rango') return;
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    if (value === 'mes-actual') {
-      setDesde(toISO(new Date(y, m, 1)));
-      setHasta(hoyISO());
-    } else if (value === 'mes-anterior') {
-      setDesde(toISO(new Date(y, m - 1, 1)));
-      setHasta(toISO(new Date(y, m, 0)));
-    } else if (value === 'ultimos-3-meses') {
-      setDesde(toISO(new Date(y, m - 2, 1)));
-      setHasta(hoyISO());
-    }
-  };
+  const { periodo, desde, hasta, setDesde, setHasta, aplicarPeriodo } = usePeriodo();
 
   useEffect(() => {
     (async () => {
