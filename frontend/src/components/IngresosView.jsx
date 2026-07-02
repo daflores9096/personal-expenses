@@ -6,6 +6,7 @@ import Modal from './Modal.jsx';
 import Acciones from './Acciones.jsx';
 import DetalleModal from './DetalleModal.jsx';
 import PeriodoIndicador from './PeriodoIndicador.jsx';
+import Paginacion from './Paginacion.jsx';
 
 const VACIO = { fecha: hoyISO(), titulo: '', detalle: '', monto: '' };
 
@@ -24,6 +25,8 @@ export default function IngresosView() {
   const [viendo, setViendo] = useState(null);
   const [ordenCampo, setOrdenCampo] = useState('fecha');
   const [ordenDir, setOrdenDir] = useState('desc');
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+  const [pagina, setPagina] = useState(1);
 
   const alternarOrden = (campo) => {
     if (ordenCampo === campo) {
@@ -55,6 +58,10 @@ export default function IngresosView() {
     cargar();
   }, []);
 
+  useEffect(() => {
+    setPagina(1);
+  }, [filasPorPagina, desde, hasta, ordenCampo, ordenDir]);
+
   const ingresosPeriodo = useMemo(
     () => ingresos.filter((i) => enRango(i.fecha, desde, hasta)),
     [ingresos, desde, hasta]
@@ -74,6 +81,14 @@ export default function IngresosView() {
     });
     return lista;
   }, [ingresosPeriodo, ordenCampo, ordenDir]);
+
+  const totalPaginas = Math.max(1, Math.ceil(ingresosOrdenados.length / filasPorPagina));
+  const paginaActual = Math.min(pagina, totalPaginas);
+
+  const ingresosPaginados = useMemo(() => {
+    const inicio = (paginaActual - 1) * filasPorPagina;
+    return ingresosOrdenados.slice(inicio, inicio + filasPorPagina);
+  }, [ingresosOrdenados, paginaActual, filasPorPagina]);
 
   const total = useMemo(
     () => ingresosPeriodo.reduce((acc, i) => acc + Number(i.monto), 0),
@@ -269,7 +284,7 @@ export default function IngresosView() {
               </tr>
             </thead>
             <tbody>
-              {ingresosOrdenados.map((i) => (
+              {ingresosPaginados.map((i) => (
                 <tr key={i.id}>
                   <td>{formatFecha(i.fecha)}</td>
                   <td>{i.titulo}</td>
@@ -286,6 +301,14 @@ export default function IngresosView() {
               ))}
             </tbody>
           </table>
+
+          <Paginacion
+            pagina={paginaActual}
+            totalItems={ingresosOrdenados.length}
+            filasPorPagina={filasPorPagina}
+            onPaginaChange={setPagina}
+            onFilasPorPaginaChange={setFilasPorPagina}
+          />
         </div>
       )}
     </section>

@@ -8,6 +8,7 @@ import PagoGastoFijoModal from './PagoGastoFijoModal.jsx';
 import Acciones from './Acciones.jsx';
 import DetalleModal from './DetalleModal.jsx';
 import PeriodoIndicador from './PeriodoIndicador.jsx';
+import Paginacion from './Paginacion.jsx';
 
 export default function GastosView({ gastos, categorias, recargar }) {
   const { desde, hasta } = usePeriodo();
@@ -55,7 +56,7 @@ export default function GastosView({ gastos, categorias, recargar }) {
 
   useEffect(() => {
     setPagina(1);
-  }, [busqueda, filtroCategoria, filasPorPagina, desde, hasta]);
+  }, [busqueda, filtroCategoria, filasPorPagina, desde, hasta, ordenCampo, ordenDir]);
 
   const pendientes = useMemo(
     () => gastosFijos.filter((gf) => !gf.pagado_actual),
@@ -107,10 +108,13 @@ export default function GastosView({ gastos, categorias, recargar }) {
     return lista;
   }, [gastosFiltrados, ordenCampo, ordenDir]);
 
+  const totalPaginas = Math.max(1, Math.ceil(gastosOrdenados.length / filasPorPagina));
+  const paginaActual = Math.min(pagina, totalPaginas);
+
   const gastosPaginados = useMemo(() => {
-    const inicio = (pagina - 1) * filasPorPagina;
+    const inicio = (paginaActual - 1) * filasPorPagina;
     return gastosOrdenados.slice(inicio, inicio + filasPorPagina);
-  }, [gastosOrdenados, pagina, filasPorPagina]);
+  }, [gastosOrdenados, paginaActual, filasPorPagina]);
 
   const barraFiltros = (
     <div className="lista-filtros-bar">
@@ -299,6 +303,13 @@ export default function GastosView({ gastos, categorias, recargar }) {
             </tbody>
           </table>
         )}
+
+        <Paginacion
+          pagina={paginaActual}
+          totalItems={gastosOrdenados.length}
+          filasPorPagina={filasPorPagina}
+          onPaginaChange={setPagina}
+        />
       </div>
 
       <Modal
