@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Auth;
 use App\Database;
 use App\Response;
 use PDO;
@@ -162,9 +163,11 @@ class GastoFijoController
 
         $detalle = trim((string)($body['detalle'] ?? ''));
 
+        $usuarioId = (int)(Auth::usuarioActual()['sub'] ?? 0) ?: null;
+
         $insert = $this->db->prepare(
-            'INSERT INTO gastos (fecha, titulo, monto, tipo, detalle, categoria_id, gasto_fijo_id)
-             VALUES (:fecha, :titulo, :monto, :tipo, :detalle, :categoria_id, :gasto_fijo_id)'
+            'INSERT INTO gastos (fecha, titulo, monto, tipo, detalle, categoria_id, gasto_fijo_id, usuario_id)
+             VALUES (:fecha, :titulo, :monto, :tipo, :detalle, :categoria_id, :gasto_fijo_id, :usuario_id)'
         );
         $insert->execute([
             'fecha'         => $fecha,
@@ -174,13 +177,17 @@ class GastoFijoController
             'detalle'       => $detalle === '' ? null : $detalle,
             'categoria_id'  => (int)$gf['categoria_id'],
             'gasto_fijo_id' => (int)$gf['id'],
+            'usuario_id'    => $usuarioId,
         ]);
 
         $gastoId = (int)$this->db->lastInsertId();
         $g = $this->db->prepare(
             'SELECT g.id, g.fecha, g.titulo, g.monto, g.tipo, g.detalle,
-                    g.categoria_id, c.nombre AS categoria_nombre, g.gasto_fijo_id, g.created_at
-             FROM gastos g INNER JOIN categorias c ON c.id = g.categoria_id
+                    g.categoria_id, c.nombre AS categoria_nombre, g.gasto_fijo_id,
+                    g.usuario_id, u.username AS usuario_nombre, g.created_at
+             FROM gastos g
+             INNER JOIN categorias c ON c.id = g.categoria_id
+             LEFT JOIN usuarios u ON u.id = g.usuario_id
              WHERE g.id = ?'
         );
         $g->execute([$gastoId]);

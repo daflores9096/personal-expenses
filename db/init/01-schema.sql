@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS gastos (
     detalle       TEXT NULL,
     categoria_id  INT NOT NULL,
     gasto_fijo_id INT NULL,
+    usuario_id    INT NULL,
     created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_gastos_categoria
         FOREIGN KEY (categoria_id) REFERENCES categorias(id)
@@ -72,9 +73,14 @@ CREATE TABLE IF NOT EXISTS gastos (
         FOREIGN KEY (gasto_fijo_id) REFERENCES gastos_fijos(id)
         ON DELETE SET NULL
         ON UPDATE CASCADE,
+    CONSTRAINT fk_gastos_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
     KEY idx_gastos_fecha (fecha),
     KEY idx_gastos_categoria (categoria_id),
-    KEY idx_gastos_gasto_fijo (gasto_fijo_id)
+    KEY idx_gastos_gasto_fijo (gasto_fijo_id),
+    KEY idx_gastos_usuario (usuario_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------

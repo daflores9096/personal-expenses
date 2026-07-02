@@ -16,10 +16,29 @@ export default function GastosView({ gastos, categorias, recargar }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+  const [pagina, setPagina] = useState(1);
 
   const [gastosFijos, setGastosFijos] = useState([]);
   const [pagando, setPagando] = useState(null);
   const [viendo, setViendo] = useState(null);
+  const [ordenCampo, setOrdenCampo] = useState('fecha');
+  const [ordenDir, setOrdenDir] = useState('desc');
+
+  const alternarOrden = (campo) => {
+    if (ordenCampo === campo) {
+      setOrdenDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setOrdenCampo(campo);
+      setOrdenDir(campo === 'titulo' ? 'asc' : 'desc');
+    }
+  };
+
+  const iconoOrden = (campo) => {
+    if (ordenCampo !== campo) return '↕';
+    return ordenDir === 'asc' ? '↑' : '↓';
+  };
 
   const cargarGastosFijos = useCallback(async () => {
     try {
@@ -33,6 +52,10 @@ export default function GastosView({ gastos, categorias, recargar }) {
   useEffect(() => {
     cargarGastosFijos();
   }, [cargarGastosFijos]);
+
+  useEffect(() => {
+    setPagina(1);
+  }, [busqueda, filtroCategoria, filasPorPagina, desde, hasta]);
 
   const pendientes = useMemo(
     () => gastosFijos.filter((gf) => !gf.pagado_actual),
@@ -49,9 +72,91 @@ export default function GastosView({ gastos, categorias, recargar }) {
   );
 
   const gastosFiltrados = useMemo(() => {
-    if (!filtroCategoria) return gastosPeriodo;
-    return gastosPeriodo.filter((g) => String(g.categoria_id) === filtroCategoria);
-  }, [gastosPeriodo, filtroCategoria]);
+    let lista = gastosPeriodo;
+
+    if (filtroCategoria) {
+      lista = lista.filter((g) => String(g.categoria_id) === filtroCategoria);
+    }
+
+    const termino = busqueda.trim().toLowerCase();
+    if (termino) {
+      lista = lista.filter((g) =>
+        [g.titulo, g.detalle]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(termino)
+      );
+    }
+
+    return lista;
+  }, [gastosPeriodo, filtroCategoria, busqueda]);
+
+  const gastosOrdenados = useMemo(() => {
+    const lista = [...gastosFiltrados];
+    lista.sort((a, b) => {
+      let cmp = 0;
+      if (ordenCampo === 'titulo') {
+        cmp = a.titulo.localeCompare(b.titulo, 'es', { sensitivity: 'base' });
+      } else {
+        cmp = a.fecha.localeCompare(b.fecha);
+      }
+      if (cmp === 0) cmp = b.id - a.id;
+      return ordenDir === 'asc' ? cmp : -cmp;
+    });
+    return lista;
+  }, [gastosFiltrados, ordenCampo, ordenDir]);
+
+  const gastosPaginados = useMemo(() => {
+    const inicio = (pagina - 1) * filasPorPagina;
+    return gastosOrdenados.slice(inicio, inicio + filasPorPagina);
+  }, [gastosOrdenados, pagina, filasPorPagina]);
+
+  const barraFiltros = (
+    <div className="lista-filtros-bar">
+      <p className="lista-filtros-titulo">Buscar y filtrar</p>
+      <div className="lista-filtros-controles">
+        <label className="filtro-campo filtro-campo-buscador">
+          <span className="filtro-campo-label">Buscar por título y detalle</span>
+          <input
+            type="search"
+            className="filtro"
+            placeholder="Buscar…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </label>
+        <label className="filtro-campo">
+          <span className="filtro-campo-label">Categoría</span>
+          <select
+            className="filtro"
+            value={filtroCategoria}
+            onChange={(e) => setFiltroCategoria(e.target.value)}
+          >
+            <option value="">Todas</option>
+            {categorias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="filtro-campo">
+          <span className="filtro-campo-label">Filas por página</span>
+          <select
+            className="filtro"
+            value={filasPorPagina}
+            onChange={(e) => setFilasPorPagina(Number(e.target.value))}
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  );
 
   const total = useMemo(
     () => gastosFiltrados.reduce((acc, g) => acc + Number(g.monto), 0),
@@ -108,18 +213,6 @@ export default function GastosView({ gastos, categorias, recargar }) {
           <button className="btn primary" onClick={abrirNuevo}>
             + Agregar nuevo
           </button>
-          <select
-            className="filtro"
-            value={filtroCategoria}
-            onChange={(e) => setFiltroCategoria(e.target.value)}
-          >
-            <option value="">Todas las categorías</option>
-            {categorias.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
         </div>
         <div className="total">
           Total: <strong>{formatMoney(total)}</strong>
@@ -150,6 +243,63 @@ export default function GastosView({ gastos, categorias, recargar }) {
           </div>
         </div>
       )}
+
+      <div className="tabla-wrap">
+        {barraFiltros}
+
+        {gastosFiltrados.length === 0 ? (
+          <p className="lista-vacia muted">
+            {gastos.length === 0
+              ? 'No hay gastos registrados todavía.'
+              : busqueda.trim() || filtroCategoria
+                ? 'No hay gastos que coincidan con los filtros.'
+                : 'No hay gastos en el período seleccionado.'}
+          </p>
+        ) : (
+          <table className="tabla">
+            <thead>
+              <tr>
+                <th>
+                  <button type="button" className="th-sort" onClick={() => alternarOrden('fecha')}>
+                    Fecha <span className="th-sort-icon">{iconoOrden('fecha')}</span>
+                  </button>
+                </th>
+                <th>
+                  <button type="button" className="th-sort" onClick={() => alternarOrden('titulo')}>
+                    Título <span className="th-sort-icon">{iconoOrden('titulo')}</span>
+                  </button>
+                </th>
+                <th>Categoría</th>
+                <th>Tipo</th>
+                <th className="right">Monto</th>
+                <th>Creado por</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {gastosPaginados.map((g) => (
+                <tr key={g.id}>
+                  <td>{formatFecha(g.fecha)}</td>
+                  <td>{g.titulo}</td>
+                  <td>{g.categoria_nombre}</td>
+                  <td>
+                    <span className={`badge ${g.tipo}`}>{g.tipo}</span>
+                  </td>
+                  <td className="right">{formatMoney(g.monto)}</td>
+                  <td>{g.usuario_nombre || <span className="muted">—</span>}</td>
+                  <td className="acciones">
+                    <Acciones
+                      onVer={() => setViendo(g)}
+                      onEditar={() => abrirEditar(g)}
+                      onEliminar={() => eliminar(g)}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       <Modal
         open={mostrarForm}
@@ -186,56 +336,13 @@ export default function GastosView({ gastos, categorias, recargar }) {
                   value: <span className={`badge ${viendo.tipo}`}>{viendo.tipo}</span>,
                 },
                 { label: 'Monto', value: formatMoney(viendo.monto) },
+                { label: 'Creado por', value: viendo.usuario_nombre },
                 { label: 'Detalle', value: viendo.detalle },
               ]
             : []
         }
       />
 
-      {gastosFiltrados.length === 0 ? (
-        <p className="muted">
-          {gastos.length === 0
-            ? 'No hay gastos registrados todavía.'
-            : 'No hay gastos en el período seleccionado.'}
-        </p>
-      ) : (
-        <div className="tabla-wrap">
-          <table className="tabla">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Título</th>
-                <th>Categoría</th>
-                <th>Tipo</th>
-                <th className="right">Monto</th>
-                <th>Detalle</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {gastosFiltrados.map((g) => (
-                <tr key={g.id}>
-                  <td>{formatFecha(g.fecha)}</td>
-                  <td>{g.titulo}</td>
-                  <td>{g.categoria_nombre}</td>
-                  <td>
-                    <span className={`badge ${g.tipo}`}>{g.tipo}</span>
-                  </td>
-                  <td className="right">{formatMoney(g.monto)}</td>
-                  <td className="detalle">{g.detalle}</td>
-                  <td className="acciones">
-                    <Acciones
-                      onVer={() => setViendo(g)}
-                      onEditar={() => abrirEditar(g)}
-                      onEliminar={() => eliminar(g)}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </section>
   );
 }

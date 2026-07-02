@@ -22,6 +22,22 @@ export default function IngresosView() {
   const [errores, setErrores] = useState({});
   const [ocupado, setOcupado] = useState(false);
   const [viendo, setViendo] = useState(null);
+  const [ordenCampo, setOrdenCampo] = useState('fecha');
+  const [ordenDir, setOrdenDir] = useState('desc');
+
+  const alternarOrden = (campo) => {
+    if (ordenCampo === campo) {
+      setOrdenDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setOrdenCampo(campo);
+      setOrdenDir(campo === 'titulo' ? 'asc' : 'desc');
+    }
+  };
+
+  const iconoOrden = (campo) => {
+    if (ordenCampo !== campo) return '↕';
+    return ordenDir === 'asc' ? '↑' : '↓';
+  };
 
   const cargar = async () => {
     setCargando(true);
@@ -43,6 +59,21 @@ export default function IngresosView() {
     () => ingresos.filter((i) => enRango(i.fecha, desde, hasta)),
     [ingresos, desde, hasta]
   );
+
+  const ingresosOrdenados = useMemo(() => {
+    const lista = [...ingresosPeriodo];
+    lista.sort((a, b) => {
+      let cmp = 0;
+      if (ordenCampo === 'titulo') {
+        cmp = a.titulo.localeCompare(b.titulo, 'es', { sensitivity: 'base' });
+      } else {
+        cmp = a.fecha.localeCompare(b.fecha);
+      }
+      if (cmp === 0) cmp = b.id - a.id;
+      return ordenDir === 'asc' ? cmp : -cmp;
+    });
+    return lista;
+  }, [ingresosPeriodo, ordenCampo, ordenDir]);
 
   const total = useMemo(
     () => ingresosPeriodo.reduce((acc, i) => acc + Number(i.monto), 0),
@@ -222,21 +253,27 @@ export default function IngresosView() {
           <table className="tabla">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Título</th>
+                <th>
+                  <button type="button" className="th-sort" onClick={() => alternarOrden('fecha')}>
+                    Fecha <span className="th-sort-icon">{iconoOrden('fecha')}</span>
+                  </button>
+                </th>
+                <th>
+                  <button type="button" className="th-sort" onClick={() => alternarOrden('titulo')}>
+                    Título <span className="th-sort-icon">{iconoOrden('titulo')}</span>
+                  </button>
+                </th>
                 <th className="right">Monto</th>
-                <th>Detalle</th>
                 <th>Creado por</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {ingresosPeriodo.map((i) => (
+              {ingresosOrdenados.map((i) => (
                 <tr key={i.id}>
                   <td>{formatFecha(i.fecha)}</td>
                   <td>{i.titulo}</td>
                   <td className="right">{formatMoney(i.monto)}</td>
-                  <td className="detalle">{i.detalle}</td>
                   <td>{i.usuario_nombre || <span className="muted">—</span>}</td>
                   <td className="acciones">
                     <Acciones

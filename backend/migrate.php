@@ -115,6 +115,24 @@ if ((int)$colExiste->fetchColumn() === 0) {
     fwrite(STDOUT, "[migrate] Columna gastos.gasto_fijo_id agregada.\n");
 }
 
+// Columna usuario_id en gastos (quién registró el gasto).
+$colUsuarioGasto = $pdo->prepare(
+    "SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gastos' AND COLUMN_NAME = 'usuario_id'"
+);
+$colUsuarioGasto->execute();
+if ((int)$colUsuarioGasto->fetchColumn() === 0) {
+    $pdo->exec(
+        "ALTER TABLE gastos
+            ADD COLUMN usuario_id INT NULL,
+            ADD CONSTRAINT fk_gastos_usuario
+                FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+                ON DELETE SET NULL ON UPDATE CASCADE,
+            ADD KEY idx_gastos_usuario (usuario_id)"
+    );
+    fwrite(STDOUT, "[migrate] Columna gastos.usuario_id agregada.\n");
+}
+
 // Tabla ingresos (puede no existir en bases creadas antes de esta función).
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS ingresos (

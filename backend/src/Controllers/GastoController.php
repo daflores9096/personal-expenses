@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Auth;
 use App\Database;
 use App\Response;
 use PDO;
@@ -23,9 +24,11 @@ class GastoController
     public function index(): void
     {
         $sql = 'SELECT g.id, g.fecha, g.titulo, g.monto, g.tipo, g.detalle,
-                       g.categoria_id, c.nombre AS categoria_nombre, g.created_at
+                       g.categoria_id, c.nombre AS categoria_nombre,
+                       g.usuario_id, u.username AS usuario_nombre, g.created_at
                 FROM gastos g
                 INNER JOIN categorias c ON c.id = g.categoria_id
+                LEFT JOIN usuarios u ON u.id = g.usuario_id
                 ORDER BY g.fecha DESC, g.id DESC';
         $stmt = $this->db->query($sql);
         Response::json($stmt->fetchAll());
@@ -34,9 +37,11 @@ class GastoController
     public function show(int $id): void
     {
         $sql = 'SELECT g.id, g.fecha, g.titulo, g.monto, g.tipo, g.detalle,
-                       g.categoria_id, c.nombre AS categoria_nombre, g.created_at
+                       g.categoria_id, c.nombre AS categoria_nombre,
+                       g.usuario_id, u.username AS usuario_nombre, g.created_at
                 FROM gastos g
                 INNER JOIN categorias c ON c.id = g.categoria_id
+                LEFT JOIN usuarios u ON u.id = g.usuario_id
                 WHERE g.id = ?';
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$id]);
@@ -52,10 +57,11 @@ class GastoController
     public function store(): void
     {
         $data = $this->validate(Response::body());
+        $data['usuario_id'] = (int)(Auth::usuarioActual()['sub'] ?? 0) ?: null;
 
         $stmt = $this->db->prepare(
-            'INSERT INTO gastos (fecha, titulo, monto, tipo, detalle, categoria_id)
-             VALUES (:fecha, :titulo, :monto, :tipo, :detalle, :categoria_id)'
+            'INSERT INTO gastos (fecha, titulo, monto, tipo, detalle, categoria_id, usuario_id)
+             VALUES (:fecha, :titulo, :monto, :tipo, :detalle, :categoria_id, :usuario_id)'
         );
         $stmt->execute($data);
 
